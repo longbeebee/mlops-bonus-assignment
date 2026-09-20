@@ -2,16 +2,9 @@
 import os
 from datetime import datetime, timezone
 
-import mlflow
-import mlflow.sklearn
-from mlflow import MlflowClient
-from sklearn.datasets import load_iris
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import train_test_split
-
-
 def _configure_mlflow() -> tuple[str, str, str]:
+    import mlflow
+
     tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     model_name = os.getenv("MLFLOW_MODEL_NAME", "sklearn-iris-classifier")
     alias = os.getenv("MLFLOW_MODEL_ALIAS", "champion")
@@ -21,6 +14,8 @@ def _configure_mlflow() -> tuple[str, str, str]:
 
 
 def load_data() -> dict:
+    from sklearn.datasets import load_iris
+
     dataset = load_iris(as_frame=True)
     return {
         "dataset": "sklearn.datasets.load_iris",
@@ -31,6 +26,13 @@ def load_data() -> dict:
 
 
 def train_model(data_info: dict) -> dict:
+    import mlflow
+    import mlflow.sklearn
+    from sklearn.datasets import load_iris
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, f1_score
+    from sklearn.model_selection import train_test_split
+
     tracking_uri, _, _ = _configure_mlflow()
     dataset = load_iris(as_frame=True)
     x_train, x_test, y_train, y_test = train_test_split(
@@ -56,6 +58,9 @@ def train_model(data_info: dict) -> dict:
 
 
 def evaluate_model(training: dict) -> dict:
+    import mlflow
+    from mlflow import MlflowClient
+
     minimum_accuracy = 0.90
     if training["accuracy"] < minimum_accuracy:
         raise ValueError(f"model accuracy {training['accuracy']:.4f} < {minimum_accuracy:.2f}")
@@ -65,6 +70,9 @@ def evaluate_model(training: dict) -> dict:
 
 
 def register_model(training: dict) -> dict:
+    import mlflow
+    from mlflow import MlflowClient
+
     tracking_uri, model_name, _ = _configure_mlflow()
     model_version = mlflow.register_model(f"runs:/{training['run_id']}/model", model_name)
     client = MlflowClient(tracking_uri=tracking_uri)
@@ -76,6 +84,8 @@ def register_model(training: dict) -> dict:
 
 
 def promote_alias(registered: dict) -> None:
+    from mlflow import MlflowClient
+
     tracking_uri, model_name, alias = _configure_mlflow()
     client = MlflowClient(tracking_uri=tracking_uri)
     client.set_registered_model_alias(model_name, alias, registered["version"])
